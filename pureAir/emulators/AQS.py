@@ -10,8 +10,7 @@ from MQTT_client import *
 # Creating Client name -
 global clientname
 r=random.randrange(1,10000000)
-clientname="AQS_sensor-Id234-"+str(r)
-DHT_topic = topic
+clientname="AQS_sensor-"+class_ID+"-"+str(r)
 update_rate = 5000 # in msec
 
 
@@ -58,7 +57,7 @@ class ConnectionDock(QDockWidget):
         self.eConnectbtn.setStyleSheet("background-color: gray")
 
         self.ePublisherTopic = QLineEdit()
-        self.ePublisherTopic.setText(DHT_topic)
+        self.ePublisherTopic.setText(AQS_topic)
 
         self.TVOCs = QLineEdit()
         self.TVOCs.setText('')
@@ -125,7 +124,7 @@ class MainWindow(QMainWindow):
         current_data = 'TVOCs: ' + str(tvoc) + ' eCO2: ' + str(eco2)
         self.connectionDock.TVOCs.setText(str(tvoc))
         self.connectionDock.eCO2.setText(str(eco2))
-        self.mc.publish_to(DHT_topic, current_data)
+        self.mc.publish_to(AQS_topic, current_data)
 
 app = QApplication(sys.argv)
 mainwin = MainWindow()

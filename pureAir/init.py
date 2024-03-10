@@ -1,0 +1,13 @@
+import socket
+
+broker_ip = str(socket.gethostbyname('broker.hivemq.com'))
+broker_port = '1883'
+username = ''  # if not needed - delete
+password = ''  # if not needed - delete
+conn_time = 0  # 0 stands for endless
+
+class_ID = "class_31"  # will be different in every class
+topic = "HA_PureAir/classes/" + class_ID
+relay_topic = topic + "/relay"
+DHT_topic = topic + "/DHT"
+AQS_topic = topic + "/AQS"

@@ -1,5 +1,6 @@
 import sys
 import random
+import PyQt5
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -10,8 +11,7 @@ from MQTT_client import *
 # Creating Client name -
 global clientname
 r=random.randrange(1,10000000)
-clientname="DHT_sensor-Id234-"+str(r)
-DHT_topic = topic
+clientname="DHT_sensor-"+class_ID+"-"+str(r)
 update_rate = 5000 # in msec
 
 
@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
     def update_data (self):
         print('Next update')
         temp = 22 + random.randrange(1, 10) / 10
-        hum = 74 + random.randrange(1, 25) / 10
+        hum = 30 + random.randrange(1, 60)
         current_data = 'temperature: ' + str(temp) + ' humidity: ' + str(hum)
         self.connectionDock.Temperature.setText(str(temp))
         self.connectionDock.Humidity.setText(str(hum))

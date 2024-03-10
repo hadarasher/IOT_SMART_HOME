@@ -10,12 +10,27 @@ from MQTT_client import *
 global clientname
 r = random.randrange(1, 10000000)
 clientname = "RELAY_sensor-Id234" + str(r)
-relay_topic = topic
 global ON
 ON = False
 
+
+class MC(Mqtt_client):
+    def __init__ (self):
+        super().__init__()
+
+    def on_message (self, client, userdata, msg):
+        topic = msg.topic
+        m_decode = str(msg.payload.decode("utf-8", "ignore"))
+        ic("message from:" + topic, m_decode)
+        try:
+            mainwin.connectionDock.update_btn_state(m_decode)
+        except:
+            ic("fail in update button state")
+
+
 class ConnectionDock(QDockWidget):
     """Main """
+
     def __init__ (self, mc):
         QDockWidget.__init__(self)
 
@@ -41,14 +56,7 @@ class ConnectionDock(QDockWidget):
         self.ePassword.setEchoMode(QLineEdit.Password)
         self.ePassword.setText(password)
 
-        self.eKeepAlive = QLineEdit()
-        self.eKeepAlive.setValidator(QIntValidator())
-        self.eKeepAlive.setText("60")
 
-        self.eSSL = QCheckBox()
-
-        self.eCleanSession = QCheckBox()
-        self.eCleanSession.setChecked(True)
 
         self.eConnectbtn = QPushButton("Enable/Connect", self)
         self.eConnectbtn.setToolTip("click me to connect")
@@ -86,7 +94,7 @@ class ConnectionDock(QDockWidget):
         self.mc.start_listening()
         self.mc.subscribe_to(self.eSubscribeTopic.text())
 
-    def update_btn_state(self, text):
+    def update_btn_state (self, text):
         global ON
         if ON:
             self.ePushtbtn.setStyleSheet("background-color: gray")
@@ -97,13 +105,14 @@ class ConnectionDock(QDockWidget):
             self.ePushtbtn.setText("Close")
             ON = True
 
+
 class MainWindow(QMainWindow):
 
     def __init__ (self, parent=None):
         QMainWindow.__init__(self, parent)
 
         # Init of Mqtt_client class
-        self.mc = Mqtt_client()
+        self.mc = MC()
 
         # general GUI settings
         self.setUnifiedTitleAndToolBarOnMac(True)
@@ -116,6 +125,7 @@ class MainWindow(QMainWindow):
         self.connectionDock = ConnectionDock(self.mc)
 
         self.addDockWidget(Qt.TopDockWidgetArea, self.connectionDock)
+
 
 app = QApplication(sys.argv)
 mainwin = MainWindow()
