@@ -127,10 +127,10 @@ class Mqtt_client():
             self.client.subscribe(topic)
             self.subscribed = True
         else:
-            ic("Can't subscribe. Connecection should be established first")
+            ic("Can't subscribe. Connection should be established first")
 
     def publish_to (self, topic, message):
         if self.connected:
             self.client.publish(topic, message)
         else:
-            ic("Can't publish. Connecection should be established first")
+            ic("Can't publish. Connection should be established first")

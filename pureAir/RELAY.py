@@ -1,5 +1,7 @@
 import sys
 import random
+from time import sleep
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -22,10 +24,11 @@ class MC(Mqtt_client):
         topic = msg.topic
         m_decode = str(msg.payload.decode("utf-8", "ignore"))
         ic("message from:" + topic, m_decode)
-        try:
-            mainwin.connectionDock.update_btn_state(m_decode)
-        except:
-            ic("fail in update button state")
+        if "open" or "close" in m_decode:
+            try:
+                mainwin.connectionDock.update_btn_state(m_decode)
+            except:
+                ic("fail in update button state")
 
 
 class ConnectionDock(QDockWidget):
@@ -92,18 +95,20 @@ class ConnectionDock(QDockWidget):
         self.mc.set_password(self.ePassword.text())
         self.mc.connect_to()
         self.mc.start_listening()
+        sleep(0.1)
         self.mc.subscribe_to(self.eSubscribeTopic.text())
 
     def update_btn_state (self, text):
         global ON
-        if ON:
+
+        if not ON and text == "open":
             self.ePushtbtn.setStyleSheet("background-color: gray")
             self.ePushtbtn.setText("Open")
-            ON = False
-        else:
+            ON = True
+        elif ON and text == "close":
             self.ePushtbtn.setStyleSheet("background-color: red")
             self.ePushtbtn.setText("Close")
-            ON = True
+            ON = False
 
 
 class MainWindow(QMainWindow):

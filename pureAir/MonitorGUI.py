@@ -33,8 +33,18 @@ class MC(Mqtt_client):
         ic("message from:" + topic, m_decode)
         try:
             mainwin.StatusDock.handleMessage(topic, m_decode)
-        except:
-            ic("fail in update button state")
+        except Exception as e:
+            ic(e)
+            #ic("fail in update button state")
+
+    def on_mqtt_connected (self):
+        print("MQTT Connected")
+        self.start_listening()
+        time.sleep(0.1)
+        global sub_topics
+        for sub_topic in sub_topics:
+            self.subscribe_to(sub_topic)
+
 
 class ConnectionDock(QDockWidget):
     """connect/Login """
@@ -88,7 +98,8 @@ class ConnectionDock(QDockWidget):
         self.mc.set_username(username)
         self.mc.set_password(password)
         self.mc.connect_to()
-        self.mc.start_listening()
+        self.mc.on_mqtt_connected()
+
 
 class PublishDock(QDockWidget):
     """Publisher - A click button to control the windows in class."""
@@ -122,28 +133,33 @@ class PublishDock(QDockWidget):
         self.setWidget(widget)
         self.setWindowTitle("Window Control")
 
-    def toggleAutomatic(self, checked):
+    def toggleAutomatic (self, checked):
         """Toggle between automatic and manual control."""
+        global IS_AUTO
         if checked:
             self.eAutomaticButton.setText("Manual")
             self.eAutomaticButton.setStyleSheet("background-color:lightgray")
-            IS_AUTO=False
-            ic
+            IS_AUTO = False
+            ic("Switched mode to manual")
         else:
             self.eAutomaticButton.setText("Automatic")
             self.eAutomaticButton.setStyleSheet("background-color:lightgreen")
             IS_AUTO = False
+            ic("Switched mode to auto")
 
-    def toggleWindow(self):
+    def toggleWindow (self):
         """Toggle between opening and closing windows."""
+        global IS_OPEN
         if IS_OPEN:
             window_status = "closed"
-            IS_OPEN = False
+            mainwin.controlWindows(False)
+            self.eWindowButton.setText("Open Windows")
         else:
             window_status = "open"
-            IS_OPEN = True
-        MainWindow.controlWindows(IS_OPEN)
+            mainwin.controlWindows(True)
+            self.eWindowButton.setText("Close Windows")
         self.windowStatusLabel.setText(f"Window Status: {window_status.capitalize()}")
+
 
 class StatusDock(QDockWidget):
     """Subscriber - Displays subscribed messages and highlights specific values."""
@@ -170,41 +186,40 @@ class StatusDock(QDockWidget):
         self.setWidget(widget)
         self.setWindowTitle("Status")
 
-    def on_mqtt_connected (self):
-        print("MQTT Connected")
-        self.mc.subscribe_to("DHT_topic")
-        self.mc.subscribe_to("AQS_topic")
-        self.mc.start_listening()
-
     def handleMessage (self, topic, payload):
         """Handle incoming messages."""
-        message = payload.decode("utf-8", "ignore")
 
         # Check which sensor the message is from and extract values
-        if "DHT_topic" in topic:
-            temperature, humidity = map(float, message.split(" "))
+        if DHT_topic in topic:
+            data = payload.split(" ")
+            temperature, humidity = float(data[1]), float(data[3])
             self.updateStatus(self.temperatureLabel, temperature, "Temperature")
             self.updateStatus(self.humidityLabel, humidity, "Humidity")
-        elif "AQS_topic" in topic:
-            tvocs, eco2 = map(float, message.split(" "))
+        elif AQS_topic in topic:
+            data = payload.split(" ")
+            tvocs, eco2 = float(data[1]), float(data[3])  # map(float, payload.split(" "))
             self.updateStatus(self.eco2Label, eco2, "eCO2")
             self.updateStatus(self.tvocsLabel, tvocs, "TVOCs")
 
     def updateStatus (self, label, value, parameter):
         """Update status for a parameter."""
         label.setText(f"{parameter}: {value}")
-        if parameter in ("Temperature", "Humidity"):
-            if parameter == "Temperature":
-                if not (20 <= value <= 30):
-                    self.HandleAbnormalValue(label)
-                else:
-                    self.setStatusNormal(label)
-            elif parameter == "Humidity":
-                if not (30 <= value <= 60):
-                    self.HandleAbnormalValue(label)
-                else:
-                    self.setStatusNormal(label)
-        elif parameter in ("eCO2", "TVOCs"):
+        if parameter == "Temperature":
+            if not (20 <= value <= 30):
+                self.HandleAbnormalValue(label)
+            else:
+                self.setStatusNormal(label)
+        elif parameter == "Humidity":
+            if not (30 <= value <= 60):
+                self.HandleAbnormalValue(label)
+            else:
+                self.setStatusNormal(label)
+        elif parameter == "eCO2":
+            if not (400 <= value <= 1000):
+                self.HandleAbnormalValue(label)
+            else:
+                self.setStatusNormal(label)
+        elif parameter == "TVOCs":
             if not (0 <= value <= 300):
                 self.HandleAbnormalValue(label)
             else:
@@ -217,10 +232,12 @@ class StatusDock(QDockWidget):
     def HandleAbnormalValue (self, label):
         """Set status text color to red and bold font.
             if defined to auto mode - will open the windows"""
+        global IS_AUTO
+        ic("abnormal value")
         label.setStyleSheet("color: red; font-weight: bold;")
         if IS_AUTO:
-            MainWindow.controlWindows(True)
-
+            #TODO: connect to toggleWindow(), because the status don't change. can't call the func directly, there's no way because it's under PublishDock
+            mainwin.controlWindows(True)
 
 
 class MainWindow(QMainWindow):
@@ -247,9 +264,11 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.TopDockWidgetArea, self.publishDock)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.StatusDock)
 
-    def controlWindows(self, to_open):
-        if to_open:
-            self.mc.publish_to(relay_topic,"open")
+    def controlWindows (self, to_open):
+        global IS_OPEN
+        IS_OPEN = to_open
+        if IS_OPEN:
+            self.mc.publish_to(relay_topic, "open")
         else:
             self.mc.publish_to(relay_topic, "close")
 
