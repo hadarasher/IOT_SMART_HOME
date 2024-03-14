@@ -102,7 +102,7 @@ class ConnectionDock(QDockWidget):
         global ON
 
         if not ON and text == "open":
-            self.ePushtbtn.setStyleSheet("background-color: gray")
+            self.ePushtbtn.setStyleSheet("background-color: green")
             self.ePushtbtn.setText("Open")
             ON = True
         elif ON and text == "close":

@@ -40,7 +40,7 @@ class MC(Mqtt_client):
     def on_mqtt_connected (self):
         print("MQTT Connected")
         self.start_listening()
-        time.sleep(0.1)
+        time.sleep(0.5)
         global sub_topics
         for sub_topic in sub_topics:
             self.subscribe_to(sub_topic)
@@ -144,7 +144,7 @@ class PublishDock(QDockWidget):
         else:
             self.eAutomaticButton.setText("Automatic")
             self.eAutomaticButton.setStyleSheet("background-color:lightgreen")
-            IS_AUTO = False
+            IS_AUTO = True
             ic("Switched mode to auto")
 
     def toggleWindow (self):
@@ -236,8 +236,10 @@ class StatusDock(QDockWidget):
         ic("abnormal value")
         label.setStyleSheet("color: red; font-weight: bold;")
         if IS_AUTO:
-            #TODO: connect to toggleWindow(), because the status don't change. can't call the func directly, there's no way because it's under PublishDock
-            mainwin.controlWindows(True)
+            global IS_OPEN
+            IS_OPEN=False
+            mainwin.publishDock.toggleWindow()
+
 
 
 class MainWindow(QMainWindow):
@@ -257,6 +259,7 @@ class MainWindow(QMainWindow):
 
         # Init QDockWidget objects
         self.connectionDock = ConnectionDock(self.mc)
+        self.publishDock = PublishDock(self.mc)
         self.publishDock = PublishDock(self.mc)
         self.StatusDock = StatusDock(self.mc)
 
