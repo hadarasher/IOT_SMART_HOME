@@ -10,6 +10,7 @@ import time
 import datetime
 from init import *
 from MQTT_client import *
+from data_acq import *
 
 # Creating Client name - should be unique
 global clientname
@@ -31,11 +32,12 @@ class MC(Mqtt_client):
         topic = msg.topic
         m_decode = str(msg.payload.decode("utf-8", "ignore"))
         ic("message from:" + topic, m_decode)
+        add_IOT_data(topic.split('/')[-1],timestamp(),m_decode)
         try:
             mainwin.StatusDock.handleMessage(topic, m_decode)
         except Exception as e:
             ic(e)
-            #ic("fail in update button state")
+            # ic("fail in update button state")
 
     def on_mqtt_connected (self):
         print("MQTT Connected")
@@ -237,9 +239,8 @@ class StatusDock(QDockWidget):
         label.setStyleSheet("color: red; font-weight: bold;")
         if IS_AUTO:
             global IS_OPEN
-            IS_OPEN=False
+            IS_OPEN = False
             mainwin.publishDock.toggleWindow()
-
 
 
 class MainWindow(QMainWindow):
@@ -276,9 +277,18 @@ class MainWindow(QMainWindow):
             self.mc.publish_to(relay_topic, "close")
 
 
-# Press the green button in the gutter to run the script.
+def init_db_tables():
+    if db_init:
+        init_db()
+        numb = create_IOT_dev('DHT', 'on', timestamp(), class_ID, 'Detector', DHT_topic, "None")
+        numb = create_IOT_dev('AQS', 'on', timestamp(), class_ID, 'Detector', AQS_topic, "None")
+        numb = create_IOT_dev('window controller', 'on', timestamp(), class_ID, 'relay', "None", relay_topic)
+
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    init_db_tables()
     mainwin = MainWindow()
     mainwin.show()
     app.exec_()
