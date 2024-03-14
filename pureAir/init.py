@@ -12,5 +12,5 @@ relay_topic = topic + "/relay"
 DHT_topic = topic + "/DHT"
 AQS_topic = topic + "/AQS"
 
-db_init =  True   #False # True if need reinit
+db_init =  False   #False # True if need reinit
 db_name = 'classdata_31-2024.db' # SQLite
